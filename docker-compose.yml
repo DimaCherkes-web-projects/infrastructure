@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    networks:
+      - my_network
+
+  frontend:
+    image: "${FRONTEND_IMAGE}"
+    ports:
+      - "3000:3000"  # Example port; adjust as needed
+    networks:
+      - my_network
+
+  backend:
+    image: "${BACKEND_IMAGE}"
+    environment:
+      # Example connection string; ensure your app uses this environment variable.
+      - DATABASE_URL=mysql://user:password@db:3306/mydb
+    networks:
+      - my_network
+
+  db:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mydb
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - my_network
+
+networks:
+  my_network:
+    driver: bridge
+
+volumes:
+  db_data:
+
