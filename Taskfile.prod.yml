@@ -1,0 +1,52 @@
+version: "3"
+
+vars:
+  DOCKER_COMPOSE_FILE: "./docker-compose.yml"
+  DOCKER_COMPOSE_CMD: "docker compose -f {{.DOCKER_COMPOSE_FILE}}"
+
+includes:
+  FRONTEND:
+    internal: true
+    dir: ../frontend
+    taskfile: ../frontend/Taskfile.yml
+    vars:
+      FRONTEND_DOCKER_IMAGE: ""
+      FRONTEND_DOCKER_CONTAINER: ""
+
+  BACKEND:
+    internal: true
+    dir: ../backend
+    taskfile: ../backend/Taskfile.yml
+    vars:
+      BACKEND_DOCKER_IMAGE: ""
+      BACKEND_DOCKER_CONTAINER: ""
+
+env:
+  FRONTEND_IMAGE: "{{.FRONTEND_DOCKER_IMAGE}}"
+  BACKEND_IMAGE: "{{.BACKEND_DOCKER_IMAGE}}"
+  FRONTEND_CONTAINER: "{{.FRONTEND_DOCKER_CONTAINER}}"
+  BACKEND_CONTAINER: "{{.BACKEND_DOCKER_CONTAINER}}"
+
+tasks:
+  up:
+    desc: "Start the services"
+    deps:
+      - FRONTEND:build:dev
+      - BACKEND:build:dev
+    cmds:
+      - "{{.DOCKER_COMPOSE_CMD}} up -d"
+
+  logs:
+    desc: "Show logs"
+    cmds:
+      - "{{.DOCKER_COMPOSE_CMD}} logs -f"
+
+  down:
+    desc: "Stop the services"
+    cmds:
+      - "{{.DOCKER_COMPOSE_CMD}} down"
+
+  restart:
+    desc: "Restart the services"
+    cmds:
+      - "{{.DOCKER_COMPOSE_CMD}} restart"

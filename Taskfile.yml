@@ -1,68 +1,37 @@
 version: "3"
 
-vars:
-  DOCKER_COMPOSE_FILE: "./docker-compose.yml"
-  DEV_DOCKER_COMPOSE_FILE: "./docker-compose.dev.yml"
-  RUN_IN_PROD: "false" # SET TO "true" TO RUN IN PRODUCTION
-
 includes:
-  FRONTEND:
-    internal: true
-    dir: ../frontend
-    taskfile: ../frontend/Taskfile.yml
-    vars:
-      FRONTEND_DOCKER_IMAGE: ""
-      FRONTEND_DOCKER_CONTAINER: ""
+  dev:
+    dir: .
+    taskfile: ./Taskfile.dev.yml
+    reqired: false
 
-  BACKEND:
-    internal: true
-    dir: ../backend
-    taskfile: ../backend/Taskfile.yml
-    vars:
-      BACKEND_DOCKER_IMAGE: ""
-      BACKEND_DOCKER_CONTAINER: ""
-
-env:
-  FRONTEND_IMAGE: "{{.FRONTEND_DOCKER_IMAGE}}"
-  BACKEND_IMAGE: "{{.BACKEND_DOCKER_IMAGE}}"
-  FRONTEND_CONTAINER: "{{.FRONTEND_DOCKER_CONTAINER}}"
-  BACKEND_CONTAINER: "{{.BACKEND_DOCKER_CONTAINER}}"
+  prod:
+    dir: .
+    taskfile: ./Taskfile.prod.yml
+    reqired: false
 
 tasks:
-  up:
-    desc: "Start the services"
-    cmds:
-      - task: FRONTEND:build
-      - task: BACKEND:build
-      - |
-        docker compose \
-          -f "{{.DOCKER_COMPOSE_FILE}}" \
-          {{if eq .RUN_IN_PROD "false"}}-f "{{.DEV_DOCKER_COMPOSE_FILE}}"{{end}} \
-          up -d
+  generate-ssl:
+    desc: Generate SSL certificates
+    vars:
+      DOMAIN: "localhost"
+      COUNTY: "US"
+      STATE: "California"
+      CITY: "San Francisco"
+      ORG: "Example Inc."
+      EMAIL: "support@{{.DOMAIN}}"
 
-  logs:
-    desc: "Show logs"
+      CERT_DIR: "./ssl"
+      KEY_FILE: "{{.CERT_DIR}}/key.pem"
+      CERT_FILE: "{{.CERT_DIR}}/cert.pem"
     cmds:
-      - |
-        docker compose \
-          -f "{{.DOCKER_COMPOSE_FILE}}" \
-          {{if eq .RUN_IN_PROD "false"}}-f "{{.DEV_DOCKER_COMPOSE_FILE}}"{{end}} \
-          logs -f
-
-  down:
-    desc: "Stop the services"
-    cmds:
-      - |
-        docker compose \
-          -f "{{.DOCKER_COMPOSE_FILE}}" \
-          {{if eq .RUN_IN_PROD "false"}}-f "{{.DEV_DOCKER_COMPOSE_FILE}}"{{end}} \
-          down
-
-  restart:
-    desc: "Restart the services"
-    cmds:
-      - |
-        docker compose \
-          -f "{{.DOCKER_COMPOSE_FILE}}" \
-          {{if eq .RUN_IN_PROD "false"}}-f "{{.DEV_DOCKER_COMPOSE_FILE}}"{{end}} \
-          restart
+      - mkdir -p ./ssl
+      - openssl req
+        -x509
+        -nodes
+        -days 365
+        -newkey rsa:2048
+        -keyout {{.KEY_FILE}}
+        -out {{.CERT_FILE}}
+        -subj "/C={{.COUNTY}}/ST={{.STATE}}/L={{.CITY}}/O={{.ORG}}/CN={{.DOMAIN}}/emailAddress={{.EMAIL}}"
